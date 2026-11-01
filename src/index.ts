@@ -5,6 +5,7 @@ import { reimbursementsRouter } from "./routes/reimbursements";
 import cookieParser from "cookie-parser";
 import { requireAuth } from "./auth";
 import { authRouter } from "./routes/auth";
+import { actionsRouter } from "./routes/actions";
 
 const app = express();
 app.use(express.json());
@@ -20,7 +21,8 @@ app.get("/health", async (_req, res) => {
 });
 
 app.use("/auth", authRouter);
-app.use("/reimbursements", requireAuth, reimbursementsRouter);
+app.use("/reimbursements", requireAuth, actionsRouter, reimbursementsRouter);
+
 
 // Translate database errors into HTTP responses. Log only the message,
 // never the whole error object, since it can contain connection details.
@@ -39,7 +41,9 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (e.code === "22007" || e.code === "22008") {
     return res.status(400).json({ error: "invalid date" });
   }
-
+  if (e.code === "LIMIT_FILE_SIZE") {
+    return res.status(413).json({ error: "file is larger than 2 MB" });
+  }
   console.error("Unhandled error:", e.message);
   res.status(500).json({ error: "internal error" });
 });

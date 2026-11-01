@@ -6,6 +6,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   JWT_SECRET: z.string().min(32),
   NODE_ENV: z.enum(["development", "production"]).default("development"),
+  RESEND_API_KEY: z.string().min(1),
+  MAIL_FROM: z.string().min(1),
 });
 
 // Parse once at startup. A missing or weak secret stops the server immediately.

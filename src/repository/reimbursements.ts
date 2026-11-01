@@ -76,3 +76,42 @@ export async function deleteReimbursement(id: number) {
   );
   return rows[0];
 }
+
+// Returns true if a row was inserted, false if an identical one already exists.
+export async function insertIfNew(input: ReimbursementInput): Promise<boolean> {
+  const { rows } = await pool.query(
+    `INSERT INTO reimbursements
+       (email, name, college_id, reimbursement_type, claimed_amount, amount_received, comment, reimbursed_on)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     ON CONFLICT ON CONSTRAINT reimbursements_no_duplicates DO NOTHING
+     RETURNING id`,
+    [
+      input.email,
+      input.name,
+      input.college_id,
+      input.reimbursement_type,
+      input.claimed_amount,
+      input.amount_received,
+      input.comment ?? null,
+      input.reimbursed_on,
+    ]
+  );
+  return rows.length === 1;
+}
+
+export async function listUnsentIds(): Promise<string[]> {
+  const { rows } = await pool.query(
+    `SELECT id FROM reimbursements WHERE mail_status <> 'sent' ORDER BY id`
+  );
+  return rows.map((r) => r.id as string);
+}
+
+export async function markMail(id: number, status: "sent" | "failed"): Promise<void> {
+  await pool.query(
+    `UPDATE reimbursements
+        SET mail_status = $2,
+            mail_sent_at = CASE WHEN $2::text = 'sent' THEN now() ELSE NULL END
+      WHERE id = $1`,
+    [id, status]
+  );
+}
