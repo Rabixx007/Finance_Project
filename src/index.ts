@@ -2,9 +2,13 @@ import express, { NextFunction, Request, Response } from "express";
 import { config } from "./config";
 import { pool } from "./db";
 import { reimbursementsRouter } from "./routes/reimbursements";
+import cookieParser from "cookie-parser";
+import { requireAuth } from "./auth";
+import { authRouter } from "./routes/auth";
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 
 app.get("/health", async (_req, res) => {
   try {
@@ -15,7 +19,8 @@ app.get("/health", async (_req, res) => {
   }
 });
 
-app.use("/reimbursements", reimbursementsRouter);
+app.use("/auth", authRouter);
+app.use("/reimbursements", requireAuth, reimbursementsRouter);
 
 // Translate database errors into HTTP responses. Log only the message,
 // never the whole error object, since it can contain connection details.
